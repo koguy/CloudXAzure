@@ -1,4 +1,7 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using Ardalis.GuardClauses;
 using Microsoft.eShopWeb.ApplicationCore.Entities;
@@ -6,6 +9,8 @@ using Microsoft.eShopWeb.ApplicationCore.Entities.BasketAggregate;
 using Microsoft.eShopWeb.ApplicationCore.Entities.OrderAggregate;
 using Microsoft.eShopWeb.ApplicationCore.Interfaces;
 using Microsoft.eShopWeb.ApplicationCore.Specifications;
+using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 
 namespace Microsoft.eShopWeb.ApplicationCore.Services;
 
@@ -15,16 +20,19 @@ public class OrderService : IOrderService
     private readonly IUriComposer _uriComposer;
     private readonly IRepository<Basket> _basketRepository;
     private readonly IRepository<CatalogItem> _itemRepository;
+    private readonly IConfiguration _configuration;
 
     public OrderService(IRepository<Basket> basketRepository,
         IRepository<CatalogItem> itemRepository,
         IRepository<Order> orderRepository,
-        IUriComposer uriComposer)
+        IUriComposer uriComposer,
+        IConfiguration configuration)
     {
         _orderRepository = orderRepository;
         _uriComposer = uriComposer;
         _basketRepository = basketRepository;
         _itemRepository = itemRepository;
+        _configuration = configuration;
     }
 
     public async Task CreateOrderAsync(int basketId, Address shippingAddress)
@@ -49,5 +57,14 @@ public class OrderService : IOrderService
         var order = new Order(basket.BuyerId, shippingAddress, items);
 
         await _orderRepository.AddAsync(order);
+
+        await SendOrderToWarehouse(items);
+    }
+
+    private async Task SendOrderToWarehouse(List<OrderItem> items)
+    {
+        HttpClient client = new HttpClient();
+        HttpContent content = new StringContent(JsonConvert.SerializeObject(items, Formatting.Indented));
+        await client.PostAsync(_configuration.GetSection("OrderItemsReserverUrl").Value, content);
     }
 }
