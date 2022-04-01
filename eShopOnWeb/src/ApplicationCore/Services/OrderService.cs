@@ -58,7 +58,7 @@ public class OrderService : IOrderService
 
         await _orderRepository.AddAsync(order);
 
-        await SendOrderToWarehouse(items);
+        await SendOrderToDeliveryService(order);
     }
 
     private async Task SendOrderToWarehouse(List<OrderItem> items)
@@ -67,4 +67,27 @@ public class OrderService : IOrderService
         HttpContent content = new StringContent(JsonConvert.SerializeObject(items, Formatting.Indented));
         await client.PostAsync(_configuration.GetSection("OrderItemsReserverUrl").Value, content);
     }
+
+    private async Task SendOrderToDeliveryService(Order order)
+    {
+        HttpClient client = new HttpClient();
+        var deliveryObject = new OrderDelivery
+        {
+            Id = $"eShopOrder{new System.Random().Next()}",
+            ShipAddress = $"{order.ShipToAddress.State}, {order.ShipToAddress.City}, {order.ShipToAddress.Street}, {order.ShipToAddress.ZipCode}",
+            Items = order.OrderItems.Select(o => o.ItemOrdered.ProductName).ToList(),
+            FinalPrice = (int)order.OrderItems.Sum(o => o.UnitPrice * o.Units)
+        };
+        HttpContent content = new StringContent(JsonConvert.SerializeObject(deliveryObject, Formatting.Indented));
+        await client.PostAsync(_configuration.GetSection("OrderDeliveryServiceUrl").Value, content);
+    }
 }
+
+public class OrderDelivery
+{
+    public string Id { get; set; }
+    public string ShipAddress { get; set; }
+    public List<string> Items { get; set; }
+    public int FinalPrice { get; set; }
+}
+
