@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.eShopWeb.Infrastructure.Data;
 using Microsoft.eShopWeb.Infrastructure.Identity;
 using Microsoft.Extensions.Configuration;
@@ -30,7 +31,7 @@ public static class Dependencies
             // Requires LocalDB which can be installed with SQL Server Express 2016
             // https://www.microsoft.com/en-us/download/details.aspx?id=54284
             services.AddDbContext<CatalogContext>(c =>
-                c.UseInMemoryDatabase(configuration.GetConnectionString("CatalogConnection")));
+                c.UseSqlServer(configuration.GetConnectionString("CatalogConnection")));
 
             // Add Identity DbContext
             services.AddDbContext<AppIdentityDbContext>(options =>

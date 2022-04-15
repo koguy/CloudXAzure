@@ -58,7 +58,6 @@ public class OrderService : IOrderService
 
         await _orderRepository.AddAsync(order);
 
-        await SendOrderToDeliveryService(order);
     }
 
     private async Task SendOrderToWarehouse(List<OrderItem> items)
