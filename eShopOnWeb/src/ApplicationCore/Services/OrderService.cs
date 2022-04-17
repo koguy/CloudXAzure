@@ -11,6 +11,7 @@ using Microsoft.eShopWeb.ApplicationCore.Interfaces;
 using Microsoft.eShopWeb.ApplicationCore.Specifications;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
+using Azure.Messaging.ServiceBus;
 
 namespace Microsoft.eShopWeb.ApplicationCore.Services;
 
@@ -58,6 +59,19 @@ public class OrderService : IOrderService
 
         await _orderRepository.AddAsync(order);
 
+        await SendOrderUsingServiceBus(items);
+
+    }
+
+    private async Task SendOrderUsingServiceBus(List<OrderItem> items)
+    {
+        await using var client = new ServiceBusClient(_configuration.GetSection("ServiceBusConnectionString").Value);
+        await using ServiceBusSender sender = client.CreateSender(_configuration.GetSection("QueueName").Value);
+        var order = items.Select(o => new { ItemId = o.ItemOrdered.CatalogItemId, Quantity = o.Units });
+
+        var message = new ServiceBusMessage(JsonConvert.SerializeObject(order));
+
+        await sender.SendMessageAsync(message);
     }
 
     private async Task SendOrderToWarehouse(List<OrderItem> items)
@@ -89,4 +103,3 @@ public class OrderDelivery
     public List<string> Items { get; set; }
     public int FinalPrice { get; set; }
 }
-
