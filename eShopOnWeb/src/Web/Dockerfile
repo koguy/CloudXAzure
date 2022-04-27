@@ -7,21 +7,26 @@
 #
 # RUN COMMAND
 #  docker run --name eshopweb --rm -it -p 5106:5106 web
+FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
+WORKDIR /app
+EXPOSE 80
+EXPOSE 443
+
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 WORKDIR /app
-
-COPY *.sln .
 COPY . .
-WORKDIR /app/src/Web
+#COPY ["src/PublicApi/PublicApi.csproj", "./PublicApi/"]
+#RUN dotnet restore "./PublicApi/PublicApi.csproj"
+#COPY . .
+WORKDIR "/app/src/Web"
 RUN dotnet restore
 
-RUN dotnet publish -c Release -o out
+RUN dotnet build "./Web.csproj" -c Release -o /app/build
 
-FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS runtime
+FROM build AS publish
+RUN dotnet publish "./Web.csproj" -c Release -o /app/publish
+
+FROM base AS final
 WORKDIR /app
-COPY --from=build /app/src/Web/out ./
-
-# Optional: Set this here if not setting it from docker-compose.yml
-# ENV ASPNETCORE_ENVIRONMENT Development
-
+COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "Web.dll"]
