@@ -57,9 +57,8 @@ public class OrderService : IOrderService
 
         var order = new Order(basket.BuyerId, shippingAddress, items);
 
+        throw new System.Exception("Custom exception");
         await _orderRepository.AddAsync(order);
-
-        await SendOrderUsingServiceBus(items);
 
     }
 
