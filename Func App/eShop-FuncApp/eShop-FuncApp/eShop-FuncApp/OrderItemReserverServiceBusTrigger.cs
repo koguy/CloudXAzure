@@ -19,8 +19,9 @@ namespace eShop_FuncApp
         {
             log.LogInformation($"C# ServiceBus queue trigger function processed message: {myQueueItem}");
 
-            string connectionString = "DefaultEndpointsProtocol=https;AccountName=eshopstorageac;AccountKey=Z3jJ0P9U8vpZMQAB3r7eMDS+4S05M7luPLNhbLADpwjAPMkuvpzS8IBc3hp5kzXiWSiwy+NumbJE/0F2UrJuOw==;EndpointSuffix=core.windows.net";
-            string containerName = "eshopcontainer";
+            string connectionString = Environment.GetEnvironmentVariable("blobConnectionString", EnvironmentVariableTarget.Process);
+            string containerName = Environment.GetEnvironmentVariable("containerName", EnvironmentVariableTarget.Process);
+            string logicAppUrl = Environment.GetEnvironmentVariable("logicAppUrl", EnvironmentVariableTarget.Process);
 
             int attempt = 1;
             bool uploadedFailed = false;
@@ -50,8 +51,7 @@ namespace eShop_FuncApp
             if (uploadedFailed)
             {
                 var client = new HttpClient();
-                HttpResponseMessage result = await client.PostAsync("https://prod-03.centralus.logic.azure.com:443/workflows/07c05f1f2354408bab385e6653210fad/triggers/manual/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=djaDWdR35D4I22b1m_5T8MZ3Exa_SMbltEkAw-P8MPw",
-                    new StringContent(myQueueItem, Encoding.UTF8, "application/json"));
+                HttpResponseMessage result = await client.PostAsync(logicAppUrl, new StringContent(myQueueItem, Encoding.UTF8, "application/json"));
             }
         }
     }
