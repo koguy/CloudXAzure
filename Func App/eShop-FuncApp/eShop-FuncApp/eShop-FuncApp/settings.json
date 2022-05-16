@@ -1,0 +1,3 @@
+{
+  "eshopServiceBus": "Endpoint=sb://eshoponwebsb.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SOMVFbnmDqH5CMdypUUvh947vPXe6dsLtrZWaTUfORU="
+}

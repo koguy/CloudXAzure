@@ -14,6 +14,8 @@ public class MappingProfile : Profile
         CreateMap<CatalogType, CatalogTypeDto>()
             .ForMember(dto => dto.Name, options => options.MapFrom(src => src.Type));
         CreateMap<CatalogBrand, CatalogBrandDto>()
-            .ForMember(dto => dto.Name, options => options.MapFrom(src => src.Brand));
+            .ForMember(dto => dto.Name, options => options.MapFrom(src => src.Brand)); 
+
+
     }
 }

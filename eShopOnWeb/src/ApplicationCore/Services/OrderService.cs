@@ -22,18 +22,21 @@ public class OrderService : IOrderService
     private readonly IRepository<Basket> _basketRepository;
     private readonly IRepository<CatalogItem> _itemRepository;
     private readonly IConfiguration _configuration;
+    private readonly IServiceBusService _serviceBusService;
 
     public OrderService(IRepository<Basket> basketRepository,
         IRepository<CatalogItem> itemRepository,
         IRepository<Order> orderRepository,
         IUriComposer uriComposer,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IServiceBusService serviceBusService)
     {
         _orderRepository = orderRepository;
         _uriComposer = uriComposer;
         _basketRepository = basketRepository;
         _itemRepository = itemRepository;
         _configuration = configuration;
+        _serviceBusService = serviceBusService;
     }
 
     public async Task CreateOrderAsync(int basketId, Address shippingAddress)
@@ -57,20 +60,17 @@ public class OrderService : IOrderService
 
         var order = new Order(basket.BuyerId, shippingAddress, items);
 
-        throw new System.Exception("Custom exception");
         await _orderRepository.AddAsync(order);
 
+        await SendOrderUsingServiceBus(items);
+
+        await SendOrderToDeliveryService(order);
     }
 
     private async Task SendOrderUsingServiceBus(List<OrderItem> items)
     {
-        await using var client = new ServiceBusClient(_configuration.GetSection("ServiceBusConnectionString").Value);
-        await using ServiceBusSender sender = client.CreateSender(_configuration.GetSection("QueueName").Value);
         var order = items.Select(o => new { ItemId = o.ItemOrdered.CatalogItemId, Quantity = o.Units });
-
-        var message = new ServiceBusMessage(JsonConvert.SerializeObject(order));
-
-        await sender.SendMessageAsync(message);
+        await _serviceBusService.SendMessageAsync(_configuration.GetSection("QueueName").Value, JsonConvert.SerializeObject(order));
     }
 
     private async Task SendOrderToWarehouse(List<OrderItem> items)
